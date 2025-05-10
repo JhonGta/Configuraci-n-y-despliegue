@@ -1,0 +1,93 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: jsguaman7
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: lab1guamanjhon
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: U1Laboratorio1GuamanJhon
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  environment:
+    PRODUCTOS_TABLE: Productos
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem  #en lugar de - dynamodb:*
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem  # permite ciertas acciones sobre DynamoDB (buena práctica de seguridad).
+          Resource:
+            - arn:aws:dynamodb:us-east-1:430861662846:table/Productos
+  httpApi:       
+    cors:       
+      allowedOrigins:
+        - "*"
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowedHeaders:
+        - Content-Type
+
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - httpApi:
+          path: /
+          method: get
+
+  agregarProducto:
+    handler: src/agregarProducto.agregarProducto
+    events:
+      - httpApi:
+          path: /producto
+          method: post
+
+  obtenerProductos:
+    handler: src/obtenerProductos.obtenerProductos
+    events:
+      - httpApi:
+          path: /producto
+          method: get
+  obtenerProducto:                    
+    handler: src/obtenerProducto.obtenerProducto
+    events:
+      - httpApi:
+          path: /producto/{id}
+          method: get
+  
+  actualizarProducto:                
+    handler: src/actualizarProducto.actualizarProducto
+    events:
+      - httpApi:
+          path: /producto/{id}
+          method: put
+  eliminarProducto:                
+    handler: src/eliminarProducto.eliminarProducto
+    events:
+      - httpApi:
+          path: /producto/{id}
+          method: delete
+
+
+resources:
+  Resources:
+    Productos:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Productos
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH

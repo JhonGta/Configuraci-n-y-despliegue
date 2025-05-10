@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestión de Productos</title>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #121212;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+
+    h1 {
+      color: #fff;
+      margin-bottom: 20px;
+      font-size: 2rem;
+    }
+
+    .formulario {
+      background: #1f1f1f;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      width: 350px;
+      margin-bottom: 40px;
+      color: #fff;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    button.crear {
+      background-color: #28a745;
+    }
+
+    button.crear:hover {
+      background-color: #218838;
+    }
+
+    button.actualizar {
+      background-color: #007bff;
+    }
+
+    button.actualizar:hover {
+      background-color: #0056b3;
+    }
+
+    button.eliminar {
+      background-color: #dc3545;
+    }
+
+    button.eliminar:hover {
+      background-color: #c82333;
+    }
+
+    table {
+      width: 80%;
+      background-color: #1f1f1f;
+      border-collapse: collapse;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    th, td {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid #555;
+    }
+
+    th {
+      background-color: #333;
+      color: #ddd;
+    }
+
+    tr:nth-child(even) {
+      background-color: #2c2c2c;
+    }
+
+    tr:hover {
+      background-color: #3c3c3c;
+    }
+
+    .acciones button {
+      margin-right: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .formulario {
+        width: 90%;
+      }
+
+      table {
+        width: 95%;
+      }
+    }
+  </style>
+</head>
+<body>
+<br>
+  <h1>Gestión de Productos</h1>
+
+  <div class="formulario">
+    <h2>Agregar / Editar Producto</h2>
+    <input type="hidden" id="producto-id" />
+    <input id="name" placeholder="Nombre" />
+    <textarea id="description" placeholder="Descripción"></textarea>
+    <input id="price" placeholder="Precio" type="number" />
+    <input id="stock" placeholder="Stock" type="number" />
+    <input id="category_id" placeholder="ID Categoría" />
+    <button class="crear" onclick="crearProducto()">Guardar</button>
+    <button class="actualizar" onclick="actualizarProducto()" style="display:none;">Actualizar</button>
+  </div>
+
+  <h2>Lista de Productos</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th>Precio</th>
+        <th>Stock</th>
+        <th>Categoría</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="productos-body"></tbody>
+  </table>
+
+  <script>
+    const API = 'https://ntra7dbffk.execute-api.us-east-1.amazonaws.com/producto';
+
+    async function cargarProductos() {
+      const res = await fetch(API);
+      const data = await res.json();
+      const tbody = document.getElementById('productos-body');
+      tbody.innerHTML = '';
+
+      (data.data || []).forEach(p => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+          <td>${p.name}</td>
+          <td>${p.description}</td>
+          <td>${p.price}</td>
+          <td>${p.stock}</td>
+          <td>${p.category_id}</td>
+          <td class="acciones">
+            <button class="actualizar" onclick="llenarFormulario('${p.id}', '${p.name}', '${p.description}', '${p.price}', '${p.stock}', '${p.category_id}')">Editar</button>
+            <button class="eliminar" onclick="eliminarProducto('${p.id}')">Eliminar</button>
+          </td>`;
+        tbody.appendChild(fila);
+      });
+    }
+
+    async function crearProducto() {
+      const name = document.getElementById('name').value;
+      const description = document.getElementById('description').value;
+      const price = document.getElementById('price').value;
+      const stock = document.getElementById('stock').value;
+      const category_id = document.getElementById('category_id').value;
+
+      if (!name || !description || !price || !stock || !category_id) return alert("Llena todos los campos");
+
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description, price, stock, category_id })
+      });
+
+      limpiarFormulario();
+      cargarProductos();
+    }
+
+    async function actualizarProducto() {
+      const id = document.getElementById('producto-id').value;
+      const name = document.getElementById('name').value;
+      const description = document.getElementById('description').value;
+      const price = document.getElementById('price').value;
+      const stock = document.getElementById('stock').value;
+      const category_id = document.getElementById('category_id').value;
+
+      if (!id || !name || !description || !price || !stock || !category_id) return alert("Completa todos los campos");
+
+      await fetch(`${API}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description, price, stock, category_id })
+      });
+
+      limpiarFormulario();
+      cargarProductos();
+    }
+
+    async function eliminarProducto(id) {
+      if (!confirm("¿Seguro que deseas eliminar este producto?")) return;
+      await fetch(`${API}/${id}`, { method: 'DELETE' });
+      cargarProductos();
+    }
+
+    function llenarFormulario(id, name, description, price, stock, category_id) {
+      document.getElementById('producto-id').value = id;
+      document.getElementById('name').value = name;
+      document.getElementById('description').value = description;
+      document.getElementById('price').value = price;
+      document.getElementById('stock').value = stock;
+      document.getElementById('category_id').value = category_id;
+      document.querySelector('.crear').style.display = 'none';
+      document.querySelector('.actualizar').style.display = 'inline-block';
+    }
+
+    function limpiarFormulario() {
+      document.getElementById('producto-id').value = '';
+      document.getElementById('name').value = '';
+      document.getElementById('description').value = '';
+      document.getElementById('price').value = '';
+      document.getElementById('stock').value = '';
+      document.getElementById('category_id').value = '';
+      document.querySelector('.crear').style.display = 'inline-block';
+      document.querySelector('.actualizar').style.display = 'none';
+    }
+
+    cargarProductos();
+  </script>
+</body>
+</html>
